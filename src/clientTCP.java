@@ -1,7 +1,7 @@
 import java.io.*;
 import java.net.*;
 
-public class client {
+public class clientTCP {
     public static void main(String[] args) throws IOException {
         String IP = "";
         int port = 0;
