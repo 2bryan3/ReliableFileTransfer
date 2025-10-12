@@ -19,9 +19,7 @@ public class clientTCP {
 
         DataInputStream dataInput = new DataInputStream(socket.getInputStream());
         DataOutputStream dataOutput = new DataOutputStream(socket.getOutputStream());
-        BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
         BufferedReader bufferedReaderUser = new BufferedReader(new InputStreamReader(System.in));
-        PrintWriter printWriter = new PrintWriter(socket.getOutputStream(), true);
 
         while (true) {
             System.out.print("Enter command: ");
@@ -34,28 +32,28 @@ public class clientTCP {
                     continue;
                 }
 
-                printWriter.println(command);
+                dataOutput.writeUTF(command);
                 dataOutput.writeLong(file.length());
+                dataOutput.flush();
+
                 FileInputStream fileInput = new FileInputStream(file);
                 byte[] buffer = new byte[1024];
                 int read;
                 while((read = fileInput.read(buffer)) != -1){
                     dataOutput.write(buffer, 0, read);
                 }
+                dataOutput.flush();
                 fileInput.close();
-//                String output;
-//                while((output = bufferedReader.readLine()) != null && !output.equals("END")){
-//                    System.out.println(output);
-//                }
-                System.out.println(bufferedReader.readLine());
+                System.out.println(dataInput.readUTF());
+
             } else if(command.startsWith("get ") || (command.startsWith("Get "))){
-                printWriter.println(command);
+                dataOutput.writeUTF(command);
+                dataOutput.flush();
 
                 String fileName = new File(command.split(" ",2)[1]).getName();
                 File directory = new File("downloads");
                 directory.mkdirs();
                 File file = new File(directory, fileName);
-                printWriter.println(file.getAbsolutePath());
 
                 long fileSize = dataInput.readLong();
                 FileOutputStream fileOutput = new FileOutputStream(file);
@@ -71,9 +69,11 @@ public class clientTCP {
                     remaining -= read;
                 }
                 fileOutput.close();
-                System.out.println(bufferedReader.readLine());
+                System.out.println(dataInput.readUTF());
+
             } else if((command.equals("quit")) || (command.equals("Quit"))){
-                printWriter.println("quit");
+                dataOutput.writeUTF("quit");
+                dataOutput.flush();
                 socket.close();
                 break;
             } else {

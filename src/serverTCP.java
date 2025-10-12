@@ -11,7 +11,6 @@ public class serverTCP {
             System.out.println("Please enter port number");
             return;
         }
-        String input;
         ServerSocket serverSocket = new ServerSocket(port);
         System.out.println("Listening on port " + port);
 
@@ -20,10 +19,9 @@ public class serverTCP {
 
         DataInputStream DataInput = new DataInputStream(socket.getInputStream());
         DataOutputStream DataOutput = new DataOutputStream(socket.getOutputStream());
-        BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-        PrintWriter printWriter = new PrintWriter(socket.getOutputStream(), true);
 
-        while((input = bufferedReader.readLine()) != null) {
+        while(true) {
+            String input = DataInput.readUTF();
             String[] tokens = input.split(" ", 2);
             String command = tokens[0];
 
@@ -31,11 +29,10 @@ public class serverTCP {
                 String fileName = new File(tokens[1]).getName();
                 File directory = new File("uploads/" + socket.getInetAddress().getHostAddress());
                 directory.mkdirs();
-                //printWriter.println(directory.getPath());
                 File file = new File(directory, fileName);
-                //printWriter.println(file.getPath());
 
                 long fileSize = DataInput.readLong();
+
                 FileOutputStream fileOutput = new FileOutputStream(file);
                 byte[] buffer = new byte[1024];
                 long remaining = fileSize;
@@ -49,29 +46,39 @@ public class serverTCP {
                     remaining -= read;
                 }
                 fileOutput.close();
-                printWriter.println("File successfully uploaded");
-                //printWriter.println("END");
+                DataOutput.writeUTF("File successfully uploaded");
+                DataOutput.flush();
+
             } else if ((command.equals("get")) || (command.equals("Get"))) {
                 File file = new File(tokens[1]);
                 if(!file.exists()) {
-                    printWriter.println("File does not exist");
+                    DataOutput.writeUTF("File does not exist");
+                    DataOutput.flush();
                     continue;
                 }
 
                 long fileSize = file.length();
                 DataOutput.writeLong(fileSize);
+                DataOutput.flush();
+
                 FileInputStream fileInput = new FileInputStream(file);
                 byte[] buffer = new byte[1024];
                 int read;
                 while ((read = fileInput.read(buffer)) != -1) {
                     DataOutput.write(buffer, 0, read);
                 }
+                DataOutput.flush();
                 fileInput.close();
-                printWriter.println("File delivered from server");
+
+                DataOutput.writeUTF("File delivered from server");
+                DataOutput.flush();
+
             } else if ((command.equals("quit")) || (command.equals("Quit"))) {
                 System.out.println("Client disconnected");
+                break;
             } else {
-                printWriter.println("Invalid command, try again");
+                DataOutput.writeUTF("Invalid command, try again");
+                DataOutput.flush();
             }
         }
 
