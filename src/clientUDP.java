@@ -18,7 +18,7 @@ public class clientUDP {
         InetAddress IP = InetAddress.getByName(inputAddress);
 
 
-        System.out.println("Connected to server: " + IP + ":" + port);
+        System.out.println("Connected to server: " + IP.getHostAddress() + ":" + port);
 
         while (true) {
             System.out.print("Enter command: ");
@@ -81,27 +81,43 @@ public class clientUDP {
         long total = 0;
         byte[] data = new byte[1100];
 
-        while (total < fileSize) {
-            DatagramPacket dataPacket = new DatagramPacket(data, data.length);
-            socket.receive(dataPacket);
+        socket.setSoTimeout(1000);
 
-            int filePartSize = dataPacket.getLength();
-            fileOutput.write(dataPacket.getData(), 0, filePartSize);
-            total += filePartSize;
+        try {
+            while (total < fileSize) {
+                DatagramPacket dataPacket = new DatagramPacket(data, data.length);
+                try {
+                    socket.receive(dataPacket);
+                } catch (SocketTimeoutException e) {
+                    fileOutput.close();
+                    if (total == 0) {
+                        System.out.println("Did not receive data. Terminating");
+                    } else {
+                        System.out.println("Data transmission terminated prematurely");
+                    }
+                    System.exit(1);
+                }
+                int filePartSize = dataPacket.getLength();
+                fileOutput.write(dataPacket.getData(), 0, filePartSize);
+                total += filePartSize;
 
-            String ack = "ACK";
-            byte[] ackData = ack.getBytes();
-            DatagramPacket ackPacket = new DatagramPacket(ackData, ackData.length, senderAddr, senderPort);
-            socket.send(ackPacket);
+                String ack = "ACK";
+                byte[] ackData = ack.getBytes();
+                DatagramPacket ackPacket = new DatagramPacket(ackData, ackData.length, senderAddr, senderPort);
+                socket.send(ackPacket);
+            }
+
+            fileOutput.close();
+
+            String fin = "FIN";
+            byte[] finData = fin.getBytes();
+            DatagramPacket finPacket = new DatagramPacket(finData, finData.length, senderAddr, senderPort);
+            socket.send(finPacket);
+
+            System.out.println("File successfully uploaded");
+        } finally {
+            socket.setSoTimeout(0);
         }
-        fileOutput.close();
-
-        String fin = "FIN";
-        byte[] finData = fin.getBytes();
-        DatagramPacket finPacket = new DatagramPacket(finData, finData.length, senderAddr, senderPort);
-        socket.send(finPacket);
-
-        System.out.println("File successfully uploaded");
     }
 
     static void sendFile(File file, InetAddress serverAddr, int serverPort, DatagramSocket socket) throws IOException {
@@ -113,33 +129,47 @@ public class clientUDP {
 
         FileInputStream fileInput = new FileInputStream(file);
 
-        byte[] buffer = new byte[1100];
+        byte[] buffer = new byte[1000];
         int read;
 
-        while ((read = fileInput.read(buffer)) != -1) {
-            DatagramPacket dataPacket = new DatagramPacket(buffer, read, serverAddr, serverPort);
-            socket.send(dataPacket);
+        socket.setSoTimeout(1000);
 
-            byte[] ackBuffer = new byte[1024];
-            DatagramPacket ackPacket = new DatagramPacket(ackBuffer, ackBuffer.length);
-            socket.receive(ackPacket);
+        try {
+            while ((read = fileInput.read(buffer)) != -1) {
+                DatagramPacket dataPacket = new DatagramPacket(buffer, read, serverAddr, serverPort);
+                socket.send(dataPacket);
 
-            String ack = new String(ackPacket.getData(), 0, ackPacket.getLength());
-            if (!ack.equals("ACK")) {
-                System.out.println("Did not receive ACK");
-                fileInput.close();
-                return;
+                byte[] ackBuffer = new byte[1024];
+                DatagramPacket ackPacket = new DatagramPacket(ackBuffer, ackBuffer.length);
+                try {
+                    socket.receive(ackPacket);
+                } catch (SocketTimeoutException e) {
+                    fileInput.close();
+                    System.out.println("Did not receive ACK. Terminating");
+                    System.exit(1);
+                }
+
+                String ack = new String(ackPacket.getData(), 0, ackPacket.getLength());
+                if (!ack.equals("ACK")) {
+                    System.out.println("Did not receive ACK");
+                    fileInput.close();
+                    return;
+                }
             }
-        }
-        fileInput.close();
 
-        byte[] finBuffer = new byte[1024];
-        DatagramPacket finPacket = new DatagramPacket(finBuffer, finBuffer.length);
-        socket.receive(finPacket);
+            fileInput.close();
 
-        String fin = new String(finPacket.getData(), 0, finPacket.getLength());
-        if (fin.equals("FIN")) {
-            System.out.println("File delivered from server");
+            byte[] finBuffer = new byte[1024];
+            DatagramPacket finPacket = new DatagramPacket(finBuffer, finBuffer.length);
+            socket.receive(finPacket);
+
+            String fin = new String(finPacket.getData(), 0, finPacket.getLength());
+            if (fin.equals("FIN")) {
+                System.out.println("File delivered from server");
+            }
+        } finally {
+            socket.setSoTimeout(0);
         }
+
     }
 }
