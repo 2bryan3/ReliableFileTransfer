@@ -34,7 +34,7 @@ public class clientUDP {
                 DatagramPacket packet = new DatagramPacket(commandData, commandData.length, IP, port);
                 socket.send(packet);
 
-                sendFile(file, IP, port, socket);
+                sendFile(file, IP, port, socket, command);
 
             } else if (command.startsWith("get ") || (command.startsWith("Get "))) {
 
@@ -47,7 +47,7 @@ public class clientUDP {
                 directory.mkdirs();
                 File file = new File(directory, fileName);
 
-                receiveFile(file, IP, port, socket);
+                receiveFile(file, IP, port, socket, command);
 
             } else if ((command.equals("quit")) || (command.equals("Quit"))) {
                 byte[] commandData = command.getBytes();
@@ -61,7 +61,7 @@ public class clientUDP {
         }
     }
 
-    static void receiveFile(File file, InetAddress senderAddr, int senderPort, DatagramSocket socket) throws IOException {
+    static void receiveFile(File file, InetAddress senderAddr, int senderPort, DatagramSocket socket, String command) throws IOException {
 
         byte[] buffer = new byte[1024];
         DatagramPacket receivePkt = new DatagramPacket(buffer, buffer.length);
@@ -114,13 +114,17 @@ public class clientUDP {
             DatagramPacket finPacket = new DatagramPacket(finData, finData.length, senderAddr, senderPort);
             socket.send(finPacket);
 
-            System.out.println("File successfully uploaded");
+            if (command.startsWith("put ") || (command.startsWith("Put "))) {
+                System.out.println("File successfully uploaded");
+            } else if (command.startsWith("get ") || (command.startsWith("Get "))) {
+                System.out.println("File delivered from server");
+            }
         } finally {
             socket.setSoTimeout(0);
         }
     }
 
-    static void sendFile(File file, InetAddress serverAddr, int serverPort, DatagramSocket socket) throws IOException {
+    static void sendFile(File file, InetAddress serverAddr, int serverPort, DatagramSocket socket, String command) throws IOException {
         long fileSize = file.length();
         String message = "LEN:" + fileSize;
         byte[] data = message.getBytes();
@@ -165,7 +169,11 @@ public class clientUDP {
 
             String fin = new String(finPacket.getData(), 0, finPacket.getLength());
             if (fin.equals("FIN")) {
-                System.out.println("File delivered from server");
+                if (command.startsWith("put ") || (command.startsWith("Put "))) {
+                    System.out.println("File successfully uploaded");
+                } else if (command.startsWith("get ") || (command.startsWith("Get "))) {
+                    System.out.println("File delivered from server");
+                }
             }
         } finally {
             socket.setSoTimeout(0);

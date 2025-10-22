@@ -115,7 +115,7 @@ public class serverUDP {
             DatagramPacket finPacket = new DatagramPacket(finData, finData.length, clientAddr, clientPort);
             socket.send(finPacket);
 
-            System.out.println("File successfully uploaded");
+//            System.out.println("File successfully uploaded");
         } finally {
             socket.setSoTimeout(0);
         }
@@ -165,9 +165,9 @@ public class serverUDP {
             socket.receive(finPacket);
 
             String fin = new String(finPacket.getData(), 0, finPacket.getLength());
-            if (fin.equals("FIN")) {
-                System.out.println("File delivered from server");
-            }
+//            if (fin.equals("FIN")) {
+//                System.out.println("File successfully uploaded");
+//            }
         } finally {
             socket.setSoTimeout(0);
         }
