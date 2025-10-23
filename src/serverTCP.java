@@ -4,7 +4,7 @@ import java.net.*;
 public class serverTCP {
     public static void main(String[] args) throws IOException {
         int port = 0;
-
+        // takes in the arguments from the user
         if (args.length == 1) {
             port = Integer.parseInt(args[0]);
         } else {
@@ -17,11 +17,11 @@ public class serverTCP {
         Socket socket = serverSocket.accept();
         System.out.println("Accepted connection from " + socket.getInetAddress().getHostAddress());
 
-        DataInputStream DataInput = new DataInputStream(socket.getInputStream());
-        DataOutputStream DataOutput = new DataOutputStream(socket.getOutputStream());
-
+        DataInputStream dataInput = new DataInputStream(socket.getInputStream());
+        DataOutputStream dataOutput = new DataOutputStream(socket.getOutputStream());
+        //handles the client's commands
         while(true) {
-            String input = DataInput.readUTF();
+            String input = dataInput.readUTF();
             String[] tokens = input.split(" ", 2);
             String command = tokens[0];
 
@@ -31,14 +31,14 @@ public class serverTCP {
                 directory.mkdirs();
                 File file = new File(directory, fileName);
 
-                long fileSize = DataInput.readLong();
+                long fileSize = dataInput.readLong();
 
                 FileOutputStream fileOutput = new FileOutputStream(file);
                 byte[] buffer = new byte[1024];
                 long remaining = fileSize;
 
                 while (remaining > 0) {
-                    int read = DataInput.read(buffer, 0, (int)Math.min(remaining, buffer.length));
+                    int read = dataInput.read(buffer, 0, (int)Math.min(remaining, buffer.length));
                     if (read == -1) {
                         break;
                     }
@@ -46,39 +46,39 @@ public class serverTCP {
                     remaining -= read;
                 }
                 fileOutput.close();
-                DataOutput.writeUTF("File successfully uploaded");
-                DataOutput.flush();
+                dataOutput.writeUTF("File successfully uploaded");
+                dataOutput.flush();
 
             } else if ((command.equals("get")) || (command.equals("Get"))) {
                 File file = new File(tokens[1]);
                 if(!file.exists()) {
-                    DataOutput.writeUTF("File does not exist");
-                    DataOutput.flush();
+                    dataOutput.writeUTF("File does not exist");
+                    dataOutput.flush();
                     continue;
                 }
 
                 long fileSize = file.length();
-                DataOutput.writeLong(fileSize);
-                DataOutput.flush();
+                dataOutput.writeLong(fileSize);
+                dataOutput.flush();
 
                 FileInputStream fileInput = new FileInputStream(file);
                 byte[] buffer = new byte[1024];
                 int read;
                 while ((read = fileInput.read(buffer)) != -1) {
-                    DataOutput.write(buffer, 0, read);
+                    dataOutput.write(buffer, 0, read);
                 }
-                DataOutput.flush();
+                dataOutput.flush();
                 fileInput.close();
 
-                DataOutput.writeUTF("File delivered from server");
-                DataOutput.flush();
+                dataOutput.writeUTF("File delivered from server");
+                dataOutput.flush();
 
             } else if ((command.equals("quit")) || (command.equals("Quit"))) {
                 System.out.println("Client disconnected");
                 break;
             } else {
-                DataOutput.writeUTF("Invalid command, try again");
-                DataOutput.flush();
+                dataOutput.writeUTF("Invalid command, try again");
+                dataOutput.flush();
             }
         }
 

@@ -3,26 +3,26 @@ import java.net.*;
 
 public class clientUDP {
     public static void main(String[] args) throws IOException {
-        String inputAddress = "";
+        String IPAddress = "";
         int port = 0;
-
+        // takes in IP address and port number from the user
         if (args.length == 2) {
-            inputAddress = args[0];
+            IPAddress = args[0];
             port = Integer.parseInt(args[1]);
         } else {
             System.out.println("Please enter both IP and port");
             return;
         }
-        BufferedReader in = new BufferedReader(new InputStreamReader(System.in));
+        BufferedReader inputFromUser = new BufferedReader(new InputStreamReader(System.in));
         DatagramSocket socket = new DatagramSocket();
-        InetAddress IP = InetAddress.getByName(inputAddress);
+        InetAddress IP = InetAddress.getByName(IPAddress);
 
 
         System.out.println("Connected to server: " + IP.getHostAddress() + ":" + port);
-
+        // handles user commands
         while (true) {
             System.out.print("Enter command: ");
-            String command = in.readLine();
+            String command = inputFromUser.readLine();
 
             if ((command.startsWith("put ")) || (command.startsWith("Put "))) {
                 File file = new File(command.split(" ", 2)[1]);
@@ -60,7 +60,8 @@ public class clientUDP {
             }
         }
     }
-
+    //receives a file from the user using the stop and wait protocol
+    //it makes sure that the first message starts with LEN and then starts sending the data chunks
     static void receiveFile(File file, InetAddress senderAddr, int senderPort, DatagramSocket socket, String command) throws IOException {
 
         byte[] buffer = new byte[1024];
@@ -123,7 +124,8 @@ public class clientUDP {
             socket.setSoTimeout(0);
         }
     }
-
+    //sends a file to the server using the stop and wait protocol
+    //starts by sending the LEN message, then data chunks as it receives ACKs one at a time
     static void sendFile(File file, InetAddress serverAddr, int serverPort, DatagramSocket socket, String command) throws IOException {
         long fileSize = file.length();
         String message = "LEN:" + fileSize;
@@ -178,6 +180,5 @@ public class clientUDP {
         } finally {
             socket.setSoTimeout(0);
         }
-
     }
 }

@@ -8,7 +8,7 @@ public class serverUDP {
     public static void main(String[] args) throws IOException {
 
         int port = 0;
-
+        //takes in port number from user
         if (args.length == 1) {
             port = Integer.parseInt(args[0]);
         } else {
@@ -18,7 +18,6 @@ public class serverUDP {
 
         DatagramSocket socket = new DatagramSocket(port);
         System.out.println("Listening on port " + port);
-
 
         while (true) {
             byte[] receiveData = new byte[1024];
@@ -61,7 +60,8 @@ public class serverUDP {
             }
         }
     }
-
+    //receives a file from the client
+    //makes sure the packet starts with LEN, then starts receiving data until the file is complete
     static void receiveFile(File file, InetAddress clientAddr, int clientPort, DatagramSocket socket) throws IOException {
 
         byte[] buffer = new byte[1024];
@@ -115,12 +115,12 @@ public class serverUDP {
             DatagramPacket finPacket = new DatagramPacket(finData, finData.length, clientAddr, clientPort);
             socket.send(finPacket);
 
-//            System.out.println("File successfully uploaded");
         } finally {
             socket.setSoTimeout(0);
         }
     }
-
+    //sends a file to the client
+    //Len first and then a chunk of data for every ACK
     static void sendFile(File file, InetAddress clientAddr, int clientPort, DatagramSocket socket) throws IOException {
         long fileSize = file.length();
         String message = "LEN:" + fileSize;
@@ -164,10 +164,6 @@ public class serverUDP {
             DatagramPacket finPacket = new DatagramPacket(finBuffer, finBuffer.length);
             socket.receive(finPacket);
 
-            String fin = new String(finPacket.getData(), 0, finPacket.getLength());
-//            if (fin.equals("FIN")) {
-//                System.out.println("File successfully uploaded");
-//            }
         } finally {
             socket.setSoTimeout(0);
         }

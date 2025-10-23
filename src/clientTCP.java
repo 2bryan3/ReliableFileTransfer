@@ -5,7 +5,7 @@ public class clientTCP {
     public static void main(String[] args) throws IOException {
         String IP = "";
         int port = 0;
-
+        //takes in IP address and port number from the user
         if (args.length == 2) {
             IP = args[0];
             port = Integer.parseInt(args[1]);
@@ -19,11 +19,11 @@ public class clientTCP {
 
         DataInputStream dataInput = new DataInputStream(socket.getInputStream());
         DataOutputStream dataOutput = new DataOutputStream(socket.getOutputStream());
-        BufferedReader bufferedReaderUser = new BufferedReader(new InputStreamReader(System.in));
-
+        BufferedReader inputFromUser = new BufferedReader(new InputStreamReader(System.in));
+        //sends the commands
         while (true) {
             System.out.print("Enter command: ");
-            String command = bufferedReaderUser.readLine();
+            String command = inputFromUser.readLine();
 
             if((command.startsWith("put ")) || (command.startsWith("Put "))){
                 File file = new File(command.split(" ",2)[1]);
